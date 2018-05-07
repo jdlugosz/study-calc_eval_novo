@@ -51,6 +51,7 @@ struct prim_parse_error {
     int errcode;
 };
 
+[[noreturn]]
 void raise_error (string_view input, int code)
 {
     prim_parse_error Err { Data(input), code };
@@ -60,20 +61,25 @@ void raise_error (string_view input, int code)
 }
 
 
+EqEv_t::parse_error::parse_error (ptrdiff_t cursor, int errcode)
+    : runtime_error{"parse error"}, cursor{cursor}, errcode{errcode}
+{ }
+
+
 void EqEv_t::skip_ws (string_view& s)
 {
 	while (!s.empty() && isspace(static_cast<unsigned char>(s.front())))  s.remove_prefix(1);
 }
 
 
-void EqEv_t::read_required (char c, string_view& s)
+void EqEv_t::read_required (char c, string_view& input)
 {
-	if (Size(s) > 0 && s.front() == c)  {
-		s.remove_prefix(1);
-        skip_ws (s);
+	if (Size(input) > 0 && input.front() == c)  {
+		input.remove_prefix(1);
+        skip_ws (input);
         return;
 	}
-	throw ("needed specified character");
+	raise_error (input, 1);
 }
 
 
@@ -150,7 +156,7 @@ auto EqEv_t::read_terms (string_view & original_input) -> optional<Value_type>
         auto op = read_binop (input);
         if (!op)  break;
         nextval = read_value (input);
-        if (!nextval)  throw ("missing value");
+        if (!nextval)  raise_error (input, 2);
         // I only have one operator, addition
         total += *nextval;
     }
@@ -160,15 +166,21 @@ auto EqEv_t::read_terms (string_view & original_input) -> optional<Value_type>
 }
 
 
-string EqEv_t::eval (string_view s)
+string EqEv_t::eval (string_view input)
 {
-	skip_ws (s);
-	auto LHS= read_identifier(s);
-	read_required ('=', s);
-	auto terms_result= read_terms(s);
-    if (!s.empty())  throw "extra stuff on line";
-    set_value (*LHS, terms_result);
-    return *LHS;
+    try {
+	    skip_ws (input);
+	    auto LHS= read_identifier(input);
+	    read_required ('=', input);
+	    auto terms_result= read_terms(input);
+        if (!input.empty())  raise_error (input, 3);
+        set_value (*LHS, terms_result);
+        return *LHS;
+    }
+    catch (const prim_parse_error& err) {
+        const auto offset= err.pos - Data(input);
+        throw parse_error {offset, err.errcode};
+    }
 }
 
 

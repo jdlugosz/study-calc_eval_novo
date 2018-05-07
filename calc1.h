@@ -2,6 +2,7 @@
 
 #include <string_view>
 #include <optional>
+#include <stdexcept>
 #include <boost/multiprecision/cpp_int.hpp>
 #include <boost/container/flat_map.hpp>
 
@@ -21,8 +22,13 @@ number ::= [:isdigit:]+   // positive only; no negative sign
 class EqEv_t {
 public:
     using Value_type = boost::multiprecision::cpp_int;
-    enum op_enum { OP_plus=1 };
+    struct parse_error : std::runtime_error {
+        ptrdiff_t cursor;
+        int errcode;
+        parse_error (ptrdiff_t cursor, int errcode);
+    };
 private:
+    enum op_enum { OP_plus=1 };
     boost::container::flat_map<std::string,Value_type> variables;
 	void skip_ws (std::string_view&);
 	std::optional<std::string> read_identifier (std::string_view&);
