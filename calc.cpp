@@ -168,6 +168,7 @@ auto EqEv_t::read_terms (string_view & original_input) -> optional<Value_type>
 
 string EqEv_t::eval (string_view input)
 {
+    const auto offset_zero= Data(input);
     try {
 	    skip_ws (input);
 	    auto LHS= read_identifier(input);
@@ -178,7 +179,7 @@ string EqEv_t::eval (string_view input)
         return *LHS;
     }
     catch (const prim_parse_error& err) {
-        const auto offset= err.pos - Data(input);
+        const auto offset= err.pos - offset_zero;
         throw parse_error {offset, err.errcode};
     }
 }
@@ -196,6 +197,7 @@ void test (EqEv_t& calc, string_view s)
     }
 }
 
+#if 0
 int main()
 {
 	EqEv_t calc;
@@ -203,3 +205,5 @@ int main()
 	test (calc, "right=6  ");
 	test (calc, "total =left +right");
 }
+#endif
+

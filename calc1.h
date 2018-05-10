@@ -42,4 +42,5 @@ public:
 	std::string eval (std::string_view);
     std::optional<Value_type> get_value (std::string_view) const;
     void set_value (std::string_view, const std::optional<Value_type>&);
+    const auto& get_variables() const { return variables; }
 };

@@ -115,7 +115,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="calc-tests.cpp" />
     <ClCompile Include="calc.cpp" />
+    <ClCompile Include="catch2-main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="calc1.h" />

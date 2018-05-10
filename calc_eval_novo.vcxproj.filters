@@ -18,6 +18,12 @@
     <ClCompile Include="calc.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="calc-tests.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="catch2-main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="calc1.h">
