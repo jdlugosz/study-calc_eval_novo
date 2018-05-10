@@ -1,10 +1,10 @@
 #pragma once
 
 #include <string_view>
+#include <map>
 #include <optional>
 #include <stdexcept>
 #include <boost/multiprecision/cpp_int.hpp>
-#include <boost/container/flat_map.hpp>
 
 /*
 
@@ -29,7 +29,7 @@ public:
     };
 private:
     enum op_enum { OP_plus=1 };
-    boost::container::flat_map<std::string,Value_type> variables;
+    std::map<std::string,Value_type,std::less<>> variables;
 	void skip_ws (std::string_view&);
 	std::optional<std::string> read_identifier (std::string_view&);
 	std::string normalize_identifier (const char* start, int len);
@@ -38,6 +38,8 @@ private:
 	std::optional<Value_type> read_value (std::string_view&);
     std::optional<op_enum> read_binop (std::string_view&);
     std::optional<Value_type> read_number (std::string_view&);
+    Value_type numword_to_value (std::string_view&);
+
 public:
 	std::string eval (std::string_view);
     std::optional<Value_type> get_value (std::string_view) const;

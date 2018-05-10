@@ -6,19 +6,18 @@
 namespace D3 = Dlugosz::d3;
 using namespace D3::twostep;
 using D3::sSize;
+using D3::certainly;
 
 using std::string_view;
 using std::string;
 using std::optional;
 
 
-
 // ===== variable storage
 
 auto EqEv_t::get_value(string_view name) const -> optional<Value_type>
 {
-    string key { name };
-    auto it= variables.find(key);
+    auto it= variables.find(name);
     optional<Value_type> retval;
     if (it != End(variables))  retval= it->second;
     return retval;
@@ -29,7 +28,7 @@ void EqEv_t::set_value (string_view name, const optional<Value_type>& val)
 {
     string key { name };
     if (!val)  variables.erase(key);
-    variables.insert_or_assign (key, *val);
+    else variables.insert_or_assign (std::move(key), *val);
 }
 
 
@@ -45,6 +44,11 @@ string EqEv_t::normalize_identifier (const char* start, int len)
 // ===== parser
 
 namespace {
+
+// Parsing functions only know about the current position as their own begin pointer, not
+// where that is within the original input string.  So, errors throw that, and the top-level
+// function reconsiles that with the complete input string and changes it to the public
+// parse_error with cursor position.
 
 struct prim_parse_error {
     const char* pos;
@@ -112,6 +116,23 @@ auto EqEv_t::read_value (string_view& input) -> optional<Value_type>
 }
 
 
+// helper to abstract Value_type
+
+auto EqEv_t::numword_to_value (string_view& numword_in) -> Value_type
+{
+    string numword { numword_in };  // Boost 1.67.0 cpp_num doesn't know about string_view
+    try {
+        Value_type result { numword };  // constructor parses a string
+        // there doesn’t seem to be any way to get error information?
+        return result;
+    }
+    catch (std::runtime_error&)
+    {
+        raise_error (numword_in, 100);
+    }
+}
+
+
 auto EqEv_t::read_number(string_view& input) -> optional<Value_type>
 {
     optional<Value_type> retval;
@@ -119,8 +140,8 @@ auto EqEv_t::read_number(string_view& input) -> optional<Value_type>
     int Max = sSize(input);
     for (; len < Max; ++len)  if (!isdigit(static_cast<const unsigned char>(input[len]))) break;
     if (len==0)  return retval;
-    string numword (Begin(input), Begin(input)+len);  // Boost cpp_num doesn't know about string_view
-    retval.emplace(numword);
+    string_view numword { Data(input), certainly<size_t>(len) };
+    retval= numword_to_value (numword);
     input.remove_prefix(len);
     skip_ws(input);
     return retval;
