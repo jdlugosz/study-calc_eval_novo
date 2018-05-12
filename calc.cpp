@@ -1,4 +1,5 @@
 #include <iostream>
+#include <charconv>
 #include "d3/twostep.h"
 #include "d3/overflow.h"
 #include "calc1.h"
@@ -116,20 +117,33 @@ auto EqEv_t::read_value (string_view& input) -> optional<Value_type>
 }
 
 
-// helper to abstract Value_type
-
-auto EqEv_t::numword_to_value (string_view& numword_in) -> Value_type
+// ----- Boost cpp_int does not provide an overload of from_chars (yet?)
+// I expect any extended/enhanced number type will have a constructor that
+// takes a std::string.
+template <typename T  /*, typename = std::enable_if_t<std::is_class_v<T>> */ >
+std::from_chars_result from_chars (const char* first, const char* last, T& value)
 {
-    string numword { numword_in };  // Boost 1.67.0 cpp_num doesn't know about string_view
+    string numword { first, last };  // Boost 1.67.0 cpp_num doesn't know about string_view
     try {
-        Value_type result { numword };  // constructor parses a string
-        // there doesn’t seem to be any way to get error information?
-        return result;
+        T result { numword };  // constructor parses a string
+        value= std::move(result);
     }
     catch (std::runtime_error&)
     {
-        raise_error (numword_in, 100);
+        raise_error (numword, 100);
     }
+    return { last, {} };
+}
+
+
+auto EqEv_t::numword_to_value (string_view& numword) -> Value_type
+{
+    Value_type retval;
+    using ::from_chars;
+    using std::from_chars;
+    auto result= from_chars (&*Begin(numword), &*End(numword), retval);
+    if (result.ec != std::errc{})  raise_error (numword, 101);
+    return retval;
 }
 
 
