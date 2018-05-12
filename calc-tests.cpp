@@ -30,15 +30,6 @@ TEST_CASE ("Demo1 Calc tests") {
 }
 
 
-struct should_error_tester {
-    EqEv_t calc;
-    void operator() (string_view s)
-    {
-        CHECK_THROWS_AS (calc.eval(s), EqEv_t::parse_error);
-    }
-};
-
-
 class parse_error_matcher : public Catch::MatcherBase<EqEv_t::parse_error> {
     ptrdiff_t cursor;
     int errcode;
@@ -67,7 +58,6 @@ public:
 };
 
 
-
 // The builder function
 inline parse_error_matcher Err ( ptrdiff_t cursor, int errcode ) {
     return { cursor, errcode };
@@ -85,28 +75,18 @@ TEST_CASE ("parsing errors") {
         CHECK_THROWS_MATCHES (calc.eval(s), EqEv_t::parse_error, Err(cursor,errcode));
         };
 
-    should_error_tester be_bad;
-
-
-    try {
-        calc.eval (" lady_bug = 17");
-    }
-    catch (const EqEv_t::parse_error& err) {
-        cout << "Exception details: " << err.what() << ", position= " << err.cursor << ", code= " << err.errcode << '\n';
-    }
-
     CheckBad (" lady_bug = 17", 5,1);
     CheckBad ("green grass + 21", 6,1, "not an assignment");
     CheckBad ("foo = 123.456", 9,3, "does not take decimals");
-    be_bad ("bar = 0x234");  // does not take hex
-    REQUIRE ("red" == be_bad.calc.eval("red=1000"));
-    be_bad ("pizza = red + green + 5");  // green not defined
-    be_bad.calc.eval(" green= 18  ");
-    auto var = be_bad.calc.eval ("pizza = red + green + 5");  // should work now
+    CheckBad ("bar = 0x234", 7,3, "does not take hex");
+    REQUIRE ("red" == calc.eval("red=1000"));
+    CheckBad ("pizza = red + green + 5", 20,2, "green not defined");
+    calc.eval(" green= 18  ");
+    auto var = calc.eval ("pizza = red + green + 5");  // should work now
     REQUIRE (var == "pizza");
-    REQUIRE (be_bad.calc.get_value(var) == 1023);
-    be_bad ("flarp = red - 17");  // no such operator
-    be_bad ("grizzle   =  2345 + + 2");
+    REQUIRE (calc.get_value(var) == 1023);
+    CheckBad ("flarp = red - 17", 12,3, "no such operator");
+    CheckBad ("grizzle   =  2345 + + 2", 20,2, "operator where term expected");
 }
 
 
