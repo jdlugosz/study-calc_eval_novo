@@ -38,22 +38,66 @@ struct should_error_tester {
     }
 };
 
+
+class parse_error_matcher : public Catch::MatcherBase<EqEv_t::parse_error> {
+    ptrdiff_t cursor;
+    int errcode;
+public:
+    parse_error_matcher( ptrdiff_t cursor, int errcode ) : cursor { cursor }, errcode { errcode } {}
+
+    static inline ptrdiff_t saved_cursor;
+    static inline int saved_errcode;
+    // Performs the test for this matcher
+    bool match(const EqEv_t::parse_error& err ) const override {
+        saved_cursor= err.cursor;
+        saved_errcode= err.errcode;
+        return cursor==err.cursor && errcode==err.errcode;
+    }
+
+    // Produces a string describing what this matcher does. It should
+    // include any provided data (the begin/ end in this case) and
+    // be written as if it were stating a fact (in the output it will be
+    // preceded by the value under test).
+    virtual std::string describe() const {
+        std::ostringstream ss;
+        ss << "position " << cursor << "  error code " << errcode;
+        ss << ";  wanted (" << saved_cursor << ", " << saved_errcode << ")";
+        return ss.str();
+    }
+};
+
+
+
+// The builder function
+inline parse_error_matcher Err ( ptrdiff_t cursor, int errcode ) {
+    return { cursor, errcode };
+}
+
+
 TEST_CASE ("parsing errors") {
+
+    EqEv_t calc;
+
+    auto CheckBad = [&](string_view s, ptrdiff_t cursor, int errcode, const char* note_msg = "")
+        {
+        INFO(s);
+        INFO(note_msg);
+        CHECK_THROWS_MATCHES (calc.eval(s), EqEv_t::parse_error, Err(cursor,errcode));
+        };
 
     should_error_tester be_bad;
 
-    be_bad (" lady_bug = 17");  // no underscores allowed in names
 
     try {
-        EqEv_t calc;
         calc.eval (" lady_bug = 17");
     }
     catch (const EqEv_t::parse_error& err) {
         cout << "Exception details: " << err.what() << ", position= " << err.cursor << ", code= " << err.errcode << '\n';
     }
 
-    be_bad ("green grass + 21");  // not an assignment
-    be_bad ("foo = 123.456");  // does not take decimals
+    CheckBad (" lady_bug = 17", 5,1);
+    CheckBad ("green grass + 21", 6,1, "not an assignment");
+    CheckBad ("foo = 123.456", 9,3, "does not take decimals");
     be_bad ("bar = 0x234");  // does not take hex
     REQUIRE ("red" == be_bad.calc.eval("red=1000"));
     be_bad ("pizza = red + green + 5");  // green not defined
