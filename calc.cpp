@@ -87,15 +87,20 @@ void EqEv_t::read_required (char c, string_view& input)
 	raise_error (input, 1);
 }
 
-
+template <typename Pred>
+int EqEv_t::peek_token (std::string_view& input, Pred p)
+{
+    int len= 0;
+    int Max = sSize(input);
+    for (; len < Max; ++len)  if (!p(input[len])) break;
+    return len;
+}
 
 optional<string> EqEv_t::read_identifier (string_view& input)
 {
 	optional<string> retval;
-	int len= 0;
-	int Max = sSize(input);
-	for (; len < Max; ++len)  if (!isalpha(static_cast<const unsigned char>(input[len]))) break;
-	if (len==0)  return retval;
+	int len= peek_token (input, [](char ch){return isalpha(static_cast<const unsigned char>(ch));});
+    if (len==0)  return retval;
 	retval.emplace(normalize_identifier(&(*Begin(input)),len));
 	// after all went well, update the input range to take these chars
 	input.remove_prefix(len);
@@ -104,7 +109,7 @@ optional<string> EqEv_t::read_identifier (string_view& input)
 }
 
 
-auto EqEv_t::read_value (string_view& input) -> optional<Value_type>
+auto EqEv_t::read_value (string_view& input) const -> optional<Value_type>
 {
     ;
     // variable | number
@@ -150,9 +155,7 @@ auto EqEv_t::numword_to_value (string_view& numword) -> Value_type
 auto EqEv_t::read_number(string_view& input) -> optional<Value_type>
 {
     optional<Value_type> retval;
-    int len= 0;
-    int Max = sSize(input);
-    for (; len < Max; ++len)  if (!isdigit(static_cast<const unsigned char>(input[len]))) break;
+    int len= peek_token (input, [](char ch){return isdigit(static_cast<const unsigned char>(ch));});
     if (len==0)  return retval;
     string_view numword { Data(input), certainly<size_t>(len) };
     retval= numword_to_value (numword);
@@ -178,7 +181,7 @@ auto EqEv_t::read_binop (string_view& input) -> optional<op_enum>
 }
 
 
-auto EqEv_t::read_terms (string_view & original_input) -> optional<Value_type>
+auto EqEv_t::read_terms (string_view & original_input) const -> optional<Value_type>
 {
     optional<Value_type> retval;
     string_view input = original_input;

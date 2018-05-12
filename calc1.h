@@ -30,15 +30,17 @@ public:
 private:
     enum op_enum { OP_plus=1 };
     std::map<std::string,Value_type,std::less<>> variables;
-	void skip_ws (std::string_view&);
-	std::optional<std::string> read_identifier (std::string_view&);
-	std::string normalize_identifier (const char* start, int len);
-	void read_required (char c, std::string_view&);
-	std::optional<Value_type> read_terms (std::string_view&);
-	std::optional<Value_type> read_value (std::string_view&);
-    std::optional<op_enum> read_binop (std::string_view&);
-    std::optional<Value_type> read_number (std::string_view&);
-    Value_type numword_to_value (std::string_view&);
+	static void skip_ws (std::string_view&);
+    template <typename Pred>
+    static int peek_token (std::string_view& input, Pred p);
+    static std::optional<std::string> read_identifier (std::string_view&);
+	static std::string normalize_identifier (const char* start, int len);
+	static void read_required (char c, std::string_view&);
+	std::optional<Value_type> read_terms (std::string_view&) const;
+	std::optional<Value_type> read_value (std::string_view&) const;
+    static std::optional<op_enum> read_binop (std::string_view&);
+    static std::optional<Value_type> read_number (std::string_view&);
+    static Value_type numword_to_value (std::string_view&);
 
 public:
 	std::string eval (std::string_view);
