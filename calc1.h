@@ -1,10 +1,12 @@
 #pragma once
+#ifndef I_223AFA6C_750C_4D9F_9463_9F1A3262F570
+#define I_223AFA6C_750C_4D9F_9463_9F1A3262F570
 
 #include <string_view>
 #include <map>
 #include <optional>
 #include <stdexcept>
-#include <boost/multiprecision/cpp_int.hpp>
+#include <boost/multiprecision/cpp_int.hpp>  // https://www.boost.org/doc/libs/1_67_0/libs/multiprecision/doc/html/index.html
 
 /*
 
@@ -48,3 +50,5 @@ public:
     void set_value (std::string_view, const std::optional<Value_type>&);
     const auto& get_variables() const { return variables; }
 };
+
+#endif

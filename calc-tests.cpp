@@ -1,6 +1,5 @@
 #include "calc1.h"
-
-#include <catch.hpp>
+#include <catch.hpp>  // https://github.com/catchorg/Catch2
 
 using std::string;
 using std::string_view;
@@ -30,18 +29,20 @@ TEST_CASE ("Demo1 Calc tests") {
 }
 
 
+
+std::ostream& operator<< ( std::ostream& os, const EqEv_t::parse_error& value ) {
+    os << "wanted (position " << value.cursor << ", code " << value.errcode << ')';
+    return os;
+}
+
+
 class parse_error_matcher : public Catch::MatcherBase<EqEv_t::parse_error> {
     ptrdiff_t cursor;
     int errcode;
 public:
     parse_error_matcher( ptrdiff_t cursor, int errcode ) : cursor { cursor }, errcode { errcode } {}
-
-    static inline ptrdiff_t saved_cursor;
-    static inline int saved_errcode;
     // Performs the test for this matcher
     bool match(const EqEv_t::parse_error& err ) const override {
-        saved_cursor= err.cursor;
-        saved_errcode= err.errcode;
         return cursor==err.cursor && errcode==err.errcode;
     }
 
@@ -51,11 +52,11 @@ public:
     // preceded by the value under test).
     virtual std::string describe() const {
         std::ostringstream ss;
-        ss << "position " << cursor << "  error code " << errcode;
-        ss << ";  wanted (" << saved_cursor << ", " << saved_errcode << ")";
+        ss << "caught (position " << cursor << "  error code " << errcode << ')';
         return ss.str();
     }
 };
+
 
 
 // The builder function
@@ -125,5 +126,11 @@ TEST_CASE ("zero") {
     CHECK (calc.get_value(var)==42);
 }
 
-// use and update
+TEST_CASE ("use and update") {
+    EqEv_t calc;
+    calc.eval ("Total = 100");
+    REQUIRE (calc.get_value("Total")==100);
+    calc.eval ("Total = Total + 2");
+    REQUIRE (calc.get_value("Total")==102);
+    }
 
